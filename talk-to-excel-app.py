@@ -21,7 +21,7 @@ def load_language_models():
     
     from dotenv import load_dotenv
 
-    load_dotenv(verbose=True, dotenv_path=".env")
+    print(f"Loading env: {load_dotenv(verbose=True, dotenv_path=".env")}")
     
     embedding_model = "amazon.titan-embed-text-v2:0"
     print(f"Setting up remote Retriever model (embedding: {embedding_model})...")
@@ -66,7 +66,7 @@ async def on_chat_start():
             df=df,
             verbose=True,
             description="This dataframe contains passenger information from the Titanic, including columns like 'PassengerId', 'Survived' (0=No, 1=Yes), 'Pclass' (ticket class 1-3), 'Name', 'Sex', 'Age', 'SibSp' (siblings/spouses), 'Parch' (parents/children), 'Ticket' number, 'Fare', 'Cabin', and 'Embarked' (port of embarkation: C=Cherbourg, Q=Queenstown, S=Southampton).",
-            instruction_str="Analyze the dataframe to answer the question. Always respond in complete sentences with explanations when appropriate. Round numerical answers to 2 decimal places when needed."
+            # instruction_str="Analyze the dataframe to answer the question. Always respond in complete sentences with explanations when appropriate. Round numerical answers to 2 decimal places when needed."
         )
         
         # Store the query engine in user session
@@ -78,7 +78,7 @@ async def on_chat_start():
         
         # Create and send dataframe as element
         element = cl.Dataframe(data=df.head(5), name="Titanic Data Preview")
-        await element.send()
+        await cl.Message(content="", elements=[element]).send()
         
     except Exception as e:
         await cl.Message(
@@ -96,7 +96,7 @@ async def on_message(message: cl.Message):
         return
     
     # Show thinking/loading message
-    thinking_msg = cl.Message(content="Analyzing the data...", disable_feedback=True)
+    thinking_msg = cl.Message(content="Analyzing the data...")
     await thinking_msg.send()
     
     try:
@@ -104,7 +104,8 @@ async def on_message(message: cl.Message):
         response = query_engine.query(message.content)
         
         # Update the message with the response
-        await thinking_msg.update(content=f"{response}")
+        thinking_msg.content = f"{response}"
+        await thinking_msg.update()
         
         # For some questions, we can enhance with visualizations
         if any(keyword in message.content.lower() for keyword in 
@@ -134,11 +135,13 @@ async def on_message(message: cl.Message):
                 plt.close()
                 
                 # Send the plot as an image element
-                await cl.Image(
+                image_element = cl.Image(
                     name="Age Distribution",
                     display="inline",
                     content=buffer.getvalue()
-                ).send()
+                )
+                await cl.Message(content="Here's the age distribution:", elements=[image_element]).send()
                 
     except Exception as e:
-        await thinking_msg.update(content=f"Error processing your question: {str(e)}")
+        thinking_msg.content = f"Error processing your question: {str(e)}"
+        await thinking_msg.update()
