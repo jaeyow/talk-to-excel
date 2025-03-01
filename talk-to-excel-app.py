@@ -45,7 +45,7 @@ async def on_chat_start():
     await cl.Message(
         content=
         """
-        **Welcome to Code.Sydney's Excel Data Explorer!** 
+        **Welcome to Code.Sydney Excel Data Explorer!** 
         Please upload an Excel file (.xlsx or .xls) to begin analysing it.
         After uploading, you can ask questions about the data such as:
         - What is the average of a specific column?
